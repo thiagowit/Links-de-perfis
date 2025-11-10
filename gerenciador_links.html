@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerenciador de Links</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
+      color: white;
+      text-align: center;
+      padding: 40px 20px;
+    }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 30px;
+    }
+    form {
+      background: #222;
+      border-radius: 16px;
+      padding: 20px;
+      max-width: 400px;
+      margin: 0 auto 30px auto;
+    }
+    input {
+      width: 90%;
+      margin: 8px 0;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+    }
+    button {
+      background: #00ff99;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #00cc77;
+    }
+    .link-card {
+      background: #222;
+      border-radius: 16px;
+      margin: 15px auto;
+      max-width: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .link-card:hover {
+      transform: scale(1.05);
+      background: #333;
+    }
+    .link-card img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin-right: 15px;
+    }
+    .link-button {
+      background: #00ff99;
+      color: #000;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .link-button:hover {
+      background: #00cc77;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌐 Meus Links</h1>
+
+  <form id="linkForm">
+    <input type="text" id="linkName" placeholder="Nome do link" required><br>
+    <input type="url" id="linkURL" placeholder="URL (ex: https://meusite.com)" required><br>
+    <input type="url" id="linkImage" placeholder="URL da imagem (ícone)" required><br>
+    <button type="submit">Adicionar Link</button>
+  </form>
+
+  <div id="linksContainer"></div>
+
+  <script>
+    const form = document.getElementById('linkForm');
+    const container = document.getElementById('linksContainer');
+
+    // Carregar links salvos
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedLinks = JSON.parse(localStorage.getItem('meusLinks')) || [];
+      savedLinks.forEach(link => criarCard(link));
+    });
+
+    // Criar e exibir novo link
+    function criarCard({ name, url, img }) {
+      const card = document.createElement('div');
+      card.classList.add('link-card');
+      card.innerHTML = `
+        <img src="${img}" alt="Ícone">
+        <span>${name}</span>
+        <button class="link-button" onclick="window.open('${url}', '_blank')">Abrir</button>
+      `;
+      container.appendChild(card);
+    }
+
+    // Adicionar link e salvar localmente
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById('linkName').value;
+      const url = document.getElementById('linkURL').value;
+      const img = document.getElementById('linkImage').value;
+
+      const novoLink = { name, url, img };
+
+      criarCard(novoLink);
+
+      // Salvar no LocalStorage
+      const links = JSON.parse(localStorage.getItem('meusLinks')) || [];
+      links.push(novoLink);
+      localStorage.setItem('meusLinks', JSON.stringify(links));
+
+      form.reset();
+    });
+  </script>
+</body>
+</html>
