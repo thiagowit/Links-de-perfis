@@ -1,137 +1,183 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gerenciador de Links</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Meus Perfis Instagram</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
-      color: white;
-      text-align: center;
-      padding: 40px 20px;
-    }
-    h1 {
-      font-size: 28px;
-      margin-bottom: 30px;
-    }
-    form {
-      background: #222;
-      border-radius: 16px;
-      padding: 20px;
-      max-width: 400px;
-      margin: 0 auto 30px auto;
-    }
-    input {
-      width: 90%;
-      margin: 8px 0;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-    }
-    button {
-      background: #00ff99;
-      color: #000;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 10px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    button:hover {
-      background: #00cc77;
-    }
-    .link-card {
-      background: #222;
-      border-radius: 16px;
-      margin: 15px auto;
-      max-width: 400px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 20px;
-      transition: transform 0.2s, background 0.2s;
-    }
-    .link-card:hover {
-      transform: scale(1.05);
-      background: #333;
-    }
-    .link-card img {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      margin-right: 15px;
-    }
-    .link-button {
-      background: #00ff99;
-      color: #000;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 10px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .link-button:hover {
-      background: #00cc77;
-    }
+    body{font-family:Arial,Helvetica,sans-serif;background:#0f0f11;color:#fff;padding:28px;text-align:center}
+    h1{margin-bottom:20px}
+    form{background:#1b1b1c;padding:16px;border-radius:12px;max-width:420px;margin:0 auto 20px}
+    input[type="text"], input[type="file"]{width:92%;padding:10px;border-radius:8px;border:0;margin:8px 0;display:block}
+    button{background:#00ff99;color:#000;border:0;padding:10px 18px;border-radius:10px;font-weight:700;cursor:pointer}
+    .card{background:#181819;border-radius:12px;padding:12px;display:flex;align-items:center;justify-content:space-between;max-width:420px;margin:12px auto}
+    .card img{width:48px;height:48px;border-radius:8px;object-fit:cover;margin-right:12px}
+    .left{display:flex;align-items:center;flex:1}
+    .name{font-size:16px;text-align:left}
+    .actions{margin-left:12px}
+    .small{font-size:12px;color:#aaa}
   </style>
 </head>
 <body>
-  <h1>🌐 Meus Links</h1>
+  <h1>📸 Meus Perfis do Instagram</h1>
 
-  <form id="linkForm">
-    <input type="text" id="linkName" placeholder="Nome do link" required><br>
-    <input type="url" id="linkURL" placeholder="URL (ex: https://meusite.com)" required><br>
-    <input type="url" id="linkImage" placeholder="URL da imagem (ícone)" required><br>
-    <button type="submit">Adicionar Link</button>
+  <form id="form">
+    <input id="name" type="text" placeholder="Nome do perfil (ex: João) — obrigatório" required />
+    <input id="ig" type="text" placeholder="Usuário do Instagram (ex: usuario ou https://instagram.com/usuario) — obrigatório" required />
+    <input id="file" type="file" accept="image/*" />
+    <div style="margin-top:10px">
+      <button type="submit">Adicionar Perfil</button>
+    </div>
+    <div class="small" style="margin-top:8px">Ao usar arquivo de imagem, ele ficará salvo localmente no seu navegador.</div>
   </form>
 
-  <div id="linksContainer"></div>
+  <div id="list"></div>
 
-  <script>
-    const form = document.getElementById('linkForm');
-    const container = document.getElementById('linksContainer');
+<script>
+  const form = document.getElementById('form');
+  const list = document.getElementById('list');
+  const fileInput = document.getElementById('file');
 
-    // Carregar links salvos
-    document.addEventListener('DOMContentLoaded', () => {
-      const savedLinks = JSON.parse(localStorage.getItem('meusLinks')) || [];
-      savedLinks.forEach(link => criarCard(link));
+  // Carrega do localStorage
+  document.addEventListener('DOMContentLoaded', () => {
+    const saved = JSON.parse(localStorage.getItem('meusPerfis')) || [];
+    saved.forEach(addCard);
+  });
+
+  // Lê arquivo (se houver) e retorna Promise com dataURL
+  function readFileAsDataURL(file) {
+    return new Promise((res, rej) => {
+      if(!file) return res(null);
+      const fr = new FileReader();
+      fr.onload = () => res(fr.result);
+      fr.onerror = () => rej('Erro ao ler arquivo');
+      fr.readAsDataURL(file);
     });
+  }
 
-    // Criar e exibir novo link
-    function criarCard({ name, url, img }) {
-      const card = document.createElement('div');
-      card.classList.add('link-card');
-      card.innerHTML = `
-        <img src="${img}" alt="Ícone">
-        <span>${name}</span>
-        <button class="link-button" onclick="window.open('${url}', '_blank')">Abrir</button>
-      `;
-      container.appendChild(card);
+  // Normaliza input de instagram para extrair username
+  function extractUsername(input) {
+    if(!input) return '';
+    input = input.trim();
+    // remove @
+    if(input.startsWith('@')) input = input.slice(1);
+    // se for URL do instagram
+    try {
+      const url = new URL(input.includes('://') ? input : ('https://'+input));
+      if(url.hostname.includes('instagram.com')) {
+        const parts = url.pathname.split('/').filter(Boolean);
+        return parts[0] || '';
+      }
+    } catch(e){}
+    // se chegou aqui, retorna direto
+    return input;
+  }
+
+  // Tenta abrir no app instagram, se não abre fallback web
+  function openInstagram(username) {
+    if(!username) return;
+    const scheme = `instagram://user?username=${encodeURIComponent(username)}`;
+    const web = `https://instagram.com/${encodeURIComponent(username)}`;
+    // Tenta abrir esquema; se não abrir, abre web após 600ms
+    const start = Date.now();
+    window.location = scheme;
+    setTimeout(() => {
+      // se ainda estiver na página, abre web
+      // (não há garantia absoluta, mas é prática comum)
+      if(Date.now() - start > 50) {
+        window.open(web, '_blank');
+      } else {
+        window.open(web, '_blank');
+      }
+    }, 600);
+  }
+
+  function addCard(data) {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const left = document.createElement('div');
+    left.className = 'left';
+
+    const img = document.createElement('img');
+    img.src = data.img || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="100%" height="100%" fill="%23222"/></svg>';
+    img.alt = data.name;
+
+    const nameSpan = document.createElement('div');
+    nameSpan.className = 'name';
+    nameSpan.innerHTML = `<strong>${escapeHtml(data.name)}</strong><div class="small">@${escapeHtml(data.username)}</div>`;
+
+    left.appendChild(img);
+    left.appendChild(nameSpan);
+
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+
+    const openBtn = document.createElement('button');
+    openBtn.textContent = 'Abrir';
+    openBtn.onclick = () => openInstagram(data.username);
+
+    const delBtn = document.createElement('button');
+    delBtn.textContent = 'Excluir';
+    delBtn.style.marginLeft = '8px';
+    delBtn.onclick = () => {
+      // remover do DOM e do localStorage
+      card.remove();
+      removeFromStorage(data.id);
+    };
+
+    actions.appendChild(openBtn);
+    actions.appendChild(delBtn);
+
+    card.appendChild(left);
+    card.appendChild(actions);
+
+    list.appendChild(card);
+  }
+
+  // Gera id simples
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+
+  // Salva no localStorage
+  function saveToStorage(item) {
+    const arr = JSON.parse(localStorage.getItem('meusPerfis')) || [];
+    arr.push(item);
+    localStorage.setItem('meusPerfis', JSON.stringify(arr));
+  }
+
+  function removeFromStorage(id) {
+    const arr = JSON.parse(localStorage.getItem('meusPerfis')) || [];
+    const kept = arr.filter(x => x.id !== id);
+    localStorage.setItem('meusPerfis', JSON.stringify(kept));
+  }
+
+  // Escapa HTML simples
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]));
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('name').value.trim();
+    const ig = document.getElementById('ig').value.trim();
+    if(!name || !ig) { alert('Preencha nome e usuário/URL do Instagram'); return; }
+
+    const username = extractUsername(ig);
+    if(!username) { alert('Não foi possível identificar o usuário do Instagram.'); return; }
+
+    const file = fileInput.files[0];
+    let dataUrl = null;
+    try {
+      dataUrl = await readFileAsDataURL(file);
+    } catch(err) {
+      console.error(err);
     }
 
-    // Adicionar link e salvar localmente
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-
-      const name = document.getElementById('linkName').value;
-      const url = document.getElementById('linkURL').value;
-      const img = document.getElementById('linkImage').value;
-
-      const novoLink = { name, url, img };
-
-      criarCard(novoLink);
-
-      // Salvar no LocalStorage
-      const links = JSON.parse(localStorage.getItem('meusLinks')) || [];
-      links.push(novoLink);
-      localStorage.setItem('meusLinks', JSON.stringify(links));
-
-      form.reset();
-    });
-  </script>
+    const item = { id: uid(), name, username, img: dataUrl };
+    saveToStorage(item);
+    addCard(item);
+    form.reset();
+  });
+</script>
 </body>
 </html>
